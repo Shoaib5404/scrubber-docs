@@ -1,0 +1,74 @@
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+}
+
+.hero {
+  text-align: center;
+  padding: 3.5rem 1rem 2.5rem;
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(15, 118, 110, 0.12), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.65), transparent);
+}
+
+[data-theme='dark'] .hero {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(45, 212, 191, 0.14), transparent 70%),
+    linear-gradient(180deg, rgba(22, 37, 46, 0.8), transparent);
+}
+
+.brand {
+  font-size: clamp(2.6rem, 7vw, 4rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ifm-color-primary);
+  margin: 0 0 0.35rem;
+  line-height: 1.1;
+}
+
+.title {
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-weight: 600;
+  margin: 0 0 1rem;
+  color: var(--ifm-font-color-base);
+}
+
+.description {
+  max-width: 700px;
+  margin: 0 auto 2rem;
+  color: var(--ifm-color-emphasis-700);
+  font-size: 1.05rem;
+  line-height: 1.55;
+}
+
+.buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.card {
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 12px;
+  padding: 1.5rem;
+  background: var(--ifm-background-surface-color, var(--ifm-card-background-color));
+}
+
+.card h3 {
+  margin-top: 0;
+}
+
+.card p {
+  color: var(--ifm-color-emphasis-700);
+  margin-bottom: 0.75rem;
+}
