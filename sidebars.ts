@@ -89,6 +89,7 @@ const sidebars: SidebarsConfig = {
         'validation/index',
         'validation/how-claim-rules-run',
         'validation/business-rule-catalog',
+        'validation/business-rule-switches',
         'validation/lifecycle',
         'validation/rule-catalog',
         'validation/ncci-and-mue',
