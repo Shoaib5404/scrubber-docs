@@ -1003,6 +1003,8 @@ Large coding and edit libraries back validation (CPT, ICD-10, modifiers, NCCI, M
 
 See Prisma schema for the full table list. Admin UI: \`/dashboard/references\`.
 
+CMS **Order and Referring** NPIs (\`npi_ordering_referrings\`) sync via Nest scheduler / CLI — twice daily at **00:00** and **12:00** \`America/New_York\` when \`NPI_SYNC_SCHEDULE_ENABLED=true\`. See [Background Jobs](../observability/background-jobs).
+
 - [CPT & ICD](./cpt-and-icd)
 - [Reference Admin](./reference-admin)
 `,
@@ -1515,6 +1517,7 @@ Copy examples — never commit real secrets or PHI.
 | Database | \`DATABASE_URL\`, \`DATABASE_SSL\` |
 | Redis | \`REDIS_URL\`, \`REDIS_LOOKUP_DB\`, \`LOOKUP_CACHE_*\` |
 | Queues | \`USE_QUEUE\`, \`QUEUE_MODE\`, \`BULLMQ_CONCURRENCY\`, \`PARALLEL_VALIDATE\` |
+| NPI sync | \`NPI_SYNC_SCHEDULE_ENABLED\`, \`NPI_ORDERING_REFERRING_*\` (see [Background Jobs](../observability/background-jobs)) |
 | Auth | \`JWT_*\`, \`API_TOKEN_EXPIRATION_MINUTES\` |
 | Storage / EDI | \`STORAGE_DRIVER\`, \`S3_*\`, \`EDI_*\` |
 | Mail | \`SENDGRID_*\` / \`RESEND_*\` |
@@ -1546,9 +1549,11 @@ write(
 |---|---|---|
 | API | \`npm run start:dev\` | HTTP |
 | Worker | \`npm run start:worker:dev\` | BullMQ consumer |
-| Scheduler | \`npm run start:scheduler:dev\` | Stalled-queue detection; optional NPI sync |
+| Scheduler | \`npm run start:scheduler:dev\` | Stalled-queue detection; optional NPI sync at **00:00** and **12:00** \`America/New_York\` when \`NPI_SYNC_SCHEDULE_ENABLED=true\` |
 
 Local default: \`USE_QUEUE=false\` (inline validation). Enable queue + worker to test async paths.
+
+For NPI schedule details, CLI, Redis slot keys, and production journal logs, see [Background Jobs](../observability/background-jobs).
 `,
   ),
 );
@@ -2028,9 +2033,55 @@ write(
 |---|---|
 | BullMQ on Redis DB 0 | Queues + scheduler locks |
 | \`start:worker:dev\` | Consumes jobs (\`QueueWorkerHost\`) |
-| \`start:scheduler:dev\` | Stalled detection; optional NPI daily sync |
+| \`start:scheduler:dev\` | Stalled detection; optional NPI ordering/referring sync |
 
 Do **not** flush Redis DB 0 when experimenting with lookup cache (DB 1).
+
+## NPI ordering / referring sync
+
+CMS **Order and Referring** data backs Medicare NPI provider rules (\`npi_ordering_referrings\`).
+
+| Item | Detail |
+|---|---|
+| Process | Nest \`scrubber-scheduler\` (\`SchedulerHost\`) — **not** OS crontab |
+| Gate | \`NPI_SYNC_SCHEDULE_ENABLED=true\` (default \`false\`) |
+| Schedule | **00:00** and **12:00** \`America/New_York\` (every ~12 hours) |
+| Poll | Scheduler ticks every **5 minutes**; a run starts on the first tick after each wall clock |
+| Slot keys | Redis \`scrubber:scheduler:npi-sync:last-run-date\` stores \`YYYY-MM-DDT00\` or \`YYYY-MM-DDT12\` |
+| Overlap lock | Redis \`scrubber:scheduler:npi-sync\` (TTL 4 hours) |
+| Work | Same as CLI: fetch CMS zip → import CSV → lookup cache invalidate + warm (\`LOOKUP_CACHE_WARM_ON_IMPORT\`) |
+
+### Manual CLI (any environment)
+
+\`\`\`bash
+cd scrubber-backend
+npm run build
+npm run cli -- npi-ordering-referrings:sync
+# or lean script:
+# npx ts-node --transpile-only scripts/npi-ordering-referrings-sync.ts
+# npx ts-node --transpile-only scripts/npi-ordering-referrings-sync.ts --force
+\`\`\`
+
+Related: \`npi-ordering-referrings:fetch\`, \`npi-ordering-referrings:import\`.
+
+After a successful import, Redis lookup for \`npi_ordering_referrings\` is refreshed automatically when \`LOOKUP_CACHE_ENABLED=true\` and \`LOOKUP_CACHE_WARM_ON_IMPORT=true\`. Manual warm if needed:
+
+\`\`\`bash
+npm run cli -- redis:seed-lookups npi_ordering_referrings --warm
+\`\`\`
+
+### Production (systemd)
+
+On the VPS, enable in \`/opt/scrubber/backend/.env\`, keep \`scrubber-scheduler\` running, then:
+
+\`\`\`bash
+sudo journalctl -u scrubber-scheduler -f
+sudo journalctl -u scrubber-scheduler --since today | grep -i npi
+\`\`\`
+
+Expect lines such as \`ENABLED @ 00:00 and 12:00 America/New_York\`, \`Starting scheduled NPI…\`, \`Scheduled NPI sync finished…\`.
+
+Sync history also lives in Postgres (\`npi_ordering_referring_syncs\`). Do **not** also add an OS crontab for the same job.
 `,
   ),
 );

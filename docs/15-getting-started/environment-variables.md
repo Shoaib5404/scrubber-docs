@@ -16,6 +16,7 @@ Copy examples — never commit real secrets or PHI.
 | Database | `DATABASE_URL`, `DATABASE_SSL` |
 | Redis | `REDIS_URL`, `REDIS_LOOKUP_DB`, `LOOKUP_CACHE_*` |
 | Queues | `USE_QUEUE`, `QUEUE_MODE`, `BULLMQ_CONCURRENCY`, `PARALLEL_VALIDATE` |
+| NPI sync | `NPI_SYNC_SCHEDULE_ENABLED`, `NPI_ORDERING_REFERRING_*` (see [Background Jobs](../observability/background-jobs)) |
 | Auth | `JWT_*`, `API_TOKEN_EXPIRATION_MINUTES` |
 | Storage / EDI | `STORAGE_DRIVER`, `S3_*`, `EDI_*` |
 | Mail | `SENDGRID_*` / `RESEND_*` |
